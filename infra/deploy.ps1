@@ -2,11 +2,17 @@ param(
     [Parameter(Mandatory)] [string] $ResourceGroup,
     [Parameter(Mandatory)] [string] $AcrName,
     [Parameter(Mandatory)] [string] $DnsLabel,
+    [ValidateRange(1, 65535)] [int] $UdpPort = 5027,
+    [string] $KafkaParametersFile = 'local.parameters.json',
     [string] $Location = 'westeurope'
 )
 $ErrorActionPreference = 'Stop'
 $root = Split-Path $PSScriptRoot -Parent
-$parametersFile = Join-Path $PSScriptRoot 'local.parameters.json'
+$parametersFile = if ([System.IO.Path]::IsPathRooted($KafkaParametersFile)) {
+    $KafkaParametersFile
+} else {
+    Join-Path $PSScriptRoot $KafkaParametersFile
+}
 $deploymentFile = Join-Path $PSScriptRoot 'main.bicep'
 $buildContext = Join-Path $root 'src\Atc700Receiver'
 
@@ -37,17 +43,17 @@ $kafkaTopic = $connectionProperties['EntityPath']
 if (-not $endpointMatch.Success -or [string]::IsNullOrWhiteSpace($kafkaTopic)) {
     throw 'The Kafka connection string must contain an sb:// Endpoint and an EntityPath.'
 }
-$kafkaBootstrapServers = '{0}:9093' -f $endpointMatch.Groups['host'].Value
+$kafkaBootstrapHost = $endpointMatch.Groups['host'].Value
 $baseParameters = @(
     "@$parametersFile"
     "acrName=$AcrName"
     "dnsLabel=$DnsLabel"
     "location=$Location"
-    "kafkaBootstrapServers=$kafkaBootstrapServers"
+    "kafkaBootstrapHost=$kafkaBootstrapHost"
     "kafkaTopic=$kafkaTopic"
 )
 $registryParameters = $baseParameters + @('deployContainer=false')
-$containerParameters = $baseParameters + @('deployContainer=true', 'imageTag=latest', "udpPort=5027")
+$containerParameters = $baseParameters + @('deployContainer=true', 'imageTag=latest', "udpPort=$UdpPort")
 
 az group create -n $ResourceGroup -l $Location | Out-Null
 $registryWhatIfArgs = @('deployment', 'group', 'what-if', '--resource-group', $ResourceGroup,

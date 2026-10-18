@@ -89,11 +89,12 @@ Edit `infra/local.parameters.json` locally and replace the placeholders with the
 
 The local file is excluded by `.gitignore`, but it contains the SAS secret in plaintext on disk. Restrict file access and never commit or upload it. The deployment script reads it as a secure Bicep parameter; Bicep passes it to ACI with `secureValue`. The ACR build uses only `src/Atc700Receiver` as its build context, so the local parameter file is not sent to the image builder.
 
-The deployment script derives the Kafka host from the connection string's `Endpoint` (`<namespace>.servicebus.windows.net:9093`) and the topic from `EntityPath`. The container receives these variables:
+The deployment script derives the Kafka host from the connection string's `Endpoint` and the topic from `EntityPath`. Kafka uses the standard Event Hubs port `9093`. The container receives these variables:
 
 | Variable | Value |
 | --- | --- |
-| `KAFKA_BOOTSTRAP_SERVERS` | `<namespace>.servicebus.windows.net:9093` |
+| `KAFKA_BOOTSTRAP_HOST` | `<namespace>.servicebus.windows.net` |
+| `KAFKA_PORT` | `9093` |
 | `KAFKA_TOPIC` | Connection string `EntityPath` |
 | `KAFKA_SECURITY_PROTOCOL` | `SASL_SSL` |
 | `KAFKA_SASL_MECHANISM` | `PLAIN` |
@@ -114,6 +115,8 @@ From the repository root, deploy to the existing West Europe resource group:
 	-ResourceGroup teltonika-atc700-weu-rg `
 	-AcrName atc700rxweu20261017 `
 	-DnsLabel teltonika-atc700-20261017 `
+	-UdpPort 5027 `
+	-KafkaParametersFile local.parameters.json `
 	-Location westeurope
 ```
 

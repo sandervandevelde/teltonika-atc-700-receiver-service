@@ -8,7 +8,7 @@ param imageTag string = 'latest'
 @description('Set false on first run to create only the registry')
 param deployContainer bool = true
 param udpPort int = 5027
-param kafkaBootstrapServers string
+param kafkaBootstrapHost string
 param kafkaTopic string
 @secure()
 param kafkaConnectionString string
@@ -46,7 +46,8 @@ resource aci 'Microsoft.ContainerInstance/containerGroups@2023-05-01' = if (depl
           ports: [ { protocol: 'UDP', port: udpPort } ]
           environmentVariables: [
             { name: 'UDP_PORT', value: string(udpPort) }
-            { name: 'KAFKA_BOOTSTRAP_SERVERS', value: kafkaBootstrapServers }
+            { name: 'KAFKA_BOOTSTRAP_HOST', value: kafkaBootstrapHost }
+            { name: 'KAFKA_PORT', value: '9093' }
             { name: 'KAFKA_TOPIC', value: kafkaTopic }
             { name: 'KAFKA_SECURITY_PROTOCOL', value: 'SASL_SSL' }
             { name: 'KAFKA_SASL_MECHANISM', value: 'PLAIN' }

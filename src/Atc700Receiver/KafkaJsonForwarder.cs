@@ -14,10 +14,13 @@ public sealed class KafkaJsonForwarder : IDisposable
     {
         _logger = logger;
         _topic = GetRequired(configuration, "KAFKA_TOPIC");
+        string bootstrapHost = GetRequired(configuration, "KAFKA_BOOTSTRAP_HOST");
+        if (!int.TryParse(GetRequired(configuration, "KAFKA_PORT"), out int kafkaPort) || kafkaPort is < 1 or > 65535)
+            throw new InvalidOperationException("Kafka setting KAFKA_PORT must be an integer between 1 and 65535.");
 
         var producerConfig = new ProducerConfig
         {
-            BootstrapServers = GetRequired(configuration, "KAFKA_BOOTSTRAP_SERVERS"),
+            BootstrapServers = $"{bootstrapHost}:{kafkaPort}",
             SecurityProtocol = ParseEnum<SecurityProtocol>(configuration, "KAFKA_SECURITY_PROTOCOL"),
             SaslMechanism = ParseEnum<SaslMechanism>(configuration, "KAFKA_SASL_MECHANISM"),
             SaslUsername = GetRequired(configuration, "KAFKA_SASL_USERNAME"),
@@ -36,8 +39,8 @@ public sealed class KafkaJsonForwarder : IDisposable
             .Build();
 
         _logger.LogInformation(
-            "Kafka producer configured for {BootstrapServers}, topic {Topic}, using SASL_SSL/PLAIN",
-            producerConfig.BootstrapServers, _topic);
+            "Kafka producer configured for {BootstrapHost}:{KafkaPort}, topic {Topic}, using SASL_SSL/PLAIN",
+            bootstrapHost, kafkaPort, _topic);
     }
 
     public async Task ForwardAsync(string imei, long messageNumber, string json, CancellationToken cancellationToken)
