@@ -1,0 +1,56 @@
+# Visual Studio
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.rsuser
+
+# Visual Studio and .NET build output
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Ww]in32/
+[Aa]rm/
+[Aa]rm64/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+artifacts/
+TestResults/
+Generated Files/
+*.trx
+*.coverage
+*.coveragexml
+project.lock.json
+project.fragment.lock.json
+*.nupkg
+*.snupkg
+
+# Local Azure and environment configuration
+.azure/
+infra/local.parameters.json
+**/.env
+**/.env.*
+!**/.env.example
+**/secrets/
+**/secrets/**
+**/secrets*.json
+**/*.secrets.json
+**/credentials*.json
+**/servicePrincipal*.json
+**/appsettings.*.json
+!**/appsettings.example.json
+**/local.settings.json
+
+# Certificates and publish credentials
+*.pfx
+*.p12
+*.pem
+*.key
+*.publishsettings
+*.pubxml
