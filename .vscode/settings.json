@@ -1,0 +1,8 @@
+{
+    "chat.tools.terminal.autoApprove": {
+        "/^az account show --query \"\\{subscription:name,id:id,tenantId:tenantId\\}\" -o json; az resource list --resource-group teltonika-atc700-weu-rg --query \"\\[\\]\\.\\{name:name,type:type,location:location\\}\" -o json; dotnet --version; Get-Command docker -ErrorAction SilentlyContinue \\| Select-Object Source; Get-ChildItem src\\\\Atc700Receiver -Force$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
+    }
+}

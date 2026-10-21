@@ -3,10 +3,22 @@ param(
     [Parameter(Mandatory)] [string] $AcrName,
     [Parameter(Mandatory)] [string] $DnsLabel,
     [ValidateRange(1, 65535)] [int] $UdpPort = 5027,
+    [ValidatePattern('^[a-zA-Z0-9_][a-zA-Z0-9_.-]{0,127}$')]
+    [string] $ImageTag = [DateTime]::UtcNow.ToString('yyyyMMddHHmmssfff'),
     [string] $KafkaParametersFile = 'local.parameters.json',
     [string] $Location = 'westeurope'
 )
 $ErrorActionPreference = 'Stop'
+
+function Invoke-AzureCli {
+    param([string[]] $Arguments)
+
+    & az @Arguments
+    if ($LASTEXITCODE -ne 0) {
+        throw "Azure CLI command '$($Arguments[0])' failed with exit code $LASTEXITCODE."
+    }
+}
+
 $root = Split-Path $PSScriptRoot -Parent
 $parametersFile = if ([System.IO.Path]::IsPathRooted($KafkaParametersFile)) {
     $KafkaParametersFile
@@ -53,22 +65,22 @@ $baseParameters = @(
     "kafkaTopic=$kafkaTopic"
 )
 $registryParameters = $baseParameters + @('deployContainer=false')
-$containerParameters = $baseParameters + @('deployContainer=true', 'imageTag=latest', "udpPort=$UdpPort")
+$containerParameters = $baseParameters + @('deployContainer=true', "imageTag=$ImageTag", "udpPort=$UdpPort")
 
-az group create -n $ResourceGroup -l $Location | Out-Null
+Invoke-AzureCli -Arguments @('group', 'create', '-n', $ResourceGroup, '-l', $Location) | Out-Null
 $registryWhatIfArgs = @('deployment', 'group', 'what-if', '--resource-group', $ResourceGroup,
     '--template-file', $deploymentFile, '--parameters') + $registryParameters
-az @registryWhatIfArgs | Out-Null
+Invoke-AzureCli -Arguments $registryWhatIfArgs
 $registryDeployArgs = @('deployment', 'group', 'create', '--resource-group', $ResourceGroup,
     '--template-file', $deploymentFile, '--parameters') + $registryParameters
-az @registryDeployArgs | Out-Null
+Invoke-AzureCli -Arguments $registryDeployArgs | Out-Null
 
-az acr build --registry $AcrName --image atc700receiver:latest $buildContext
+Invoke-AzureCli -Arguments @('acr', 'build', '--registry', $AcrName, '--image', "atc700receiver:$ImageTag", $buildContext)
 
 $containerWhatIfArgs = @('deployment', 'group', 'what-if', '--resource-group', $ResourceGroup,
     '--template-file', $deploymentFile, '--parameters') + $containerParameters
-az @containerWhatIfArgs | Out-Null
+Invoke-AzureCli -Arguments $containerWhatIfArgs
 $containerDeployArgs = @('deployment', 'group', 'create', '--resource-group', $ResourceGroup,
     '--template-file', $deploymentFile, '--parameters') + $containerParameters + @(
     '--query', 'properties.outputs.hostname.value', '--output', 'tsv')
-az @containerDeployArgs
+Invoke-AzureCli -Arguments $containerDeployArgs

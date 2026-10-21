@@ -101,9 +101,9 @@ From the repository root, deploy to an existing or new resource group:
   -Location westeurope
 ```
 
-`KafkaParametersFile` can be a path relative to `infra/` or an absolute path. The script previews the Bicep deployments, builds and pushes the image to ACR, then deploys the ACI. It prints the resulting hostname, formatted as `<dns-label>.westeurope.azurecontainer.io`.
+`KafkaParametersFile` can be a path relative to `infra/` or an absolute path. The script previews the Bicep deployments, builds and pushes the image to ACR, then deploys the ACI. Each Azure CLI failure stops the script. Images use a unique UTC timestamp tag by default so a redeployment updates the running image; use `-ImageTag <tag>` to override it. Local `bin/` and `obj/` directories are excluded from the container build context. The script prints the resulting hostname, formatted as `<dns-label>.westeurope.azurecontainer.io`.
 
-The current Azure deployment uses resource group `teltonika-atc700-weu-rg`, UDP port `5027`, and hostname `teltonika-atc700-20261017.westeurope.azurecontainer.io`. Azure Container Instances and ACR are billable resources.
+The current Azure deployment uses resource group `teltonika-atc700-weu-rg`, registry `teltonikaatc70020261022`, container group `atc700receiver`, UDP port `5027`, and hostname `teltonika-atc700-20261017.westeurope.azurecontainer.io`. Both the container group public endpoint and the receiver container expose UDP `5027`; the listener uses the same port. Azure Container Instances and ACR are billable resources.
 
 ## Test and Logs
 
@@ -112,6 +112,10 @@ Test the deployed endpoint:
 ```powershell
 dotnet run --project tools/Atc700Receiver.TestClient/Atc700Receiver.TestClient.csproj -- <hostname> 5027
 ```
+
+A successful test prints `Receiver acknowledged two records` and exits with code `0`. This verifies public UDP ingress, Codec 8 Extended decoding, Kafka-confirmed persistence, and the UDP acknowledgement return path. A TCP port check does not validate this UDP endpoint.
+
+The deployed endpoint passed this test on 2026-10-21 UTC. ACI logs confirmed Kafka persistence and a successfully decoded two-record batch with `alarmButton: "pressed"`.
 
 Read the ACI runtime logs:
 
